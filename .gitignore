@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+.output/
+.vinxi/
+.react-router/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# SQLite database files (local data — never commit)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-*
+/data/
+
+# Logs
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
+
+# Test / coverage
+coverage/
+.vitest/
+test-results/
+playwright-report/
