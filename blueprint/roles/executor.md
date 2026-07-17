@@ -28,7 +28,8 @@ gate have real working code to check.
 
 ## Hands off
 
-Working tree on the feature branch + the handoff note → Reviewer (phase 3).
+Working tree on the feature branch + the Executor block written to **`HANDOFF.md`** (the project
+brain, read at start and updated at end) → Reviewer (phase 3).
 
 ## Role surface note
 

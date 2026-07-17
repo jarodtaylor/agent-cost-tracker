@@ -38,7 +38,7 @@ its own instructions.
 - Prefer to **verify a positive** (create the artifact, exercise it) over inferring a negative.
   Here: authoring `executor.toml` and delegating to it settled the question in one command.
 
-**Relation to prior art.** This is the *inverse* of the agent-os U9 convention
-(`verify-harness-surfaces-against-live-instances`), which warns about false **presences**
-(disabled entries shown as active). Same spine, opposite sign: verify against live **and** docs;
-absence needs doc-level proof.
+**Relation to prior art.** This is the *inverse* of the standing convention to verify harness
+surfaces against **live instances**, which warns about false **presences** (disabled entries shown
+as active). Same spine, opposite sign: verify against live **and** docs; absence needs doc-level
+proof.

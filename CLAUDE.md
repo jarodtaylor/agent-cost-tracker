@@ -18,6 +18,9 @@ executes; Cursor runs the QA gate.
   by convention. Run 1 lands on `feat/subscription-crud`.
 - **Colorblind-safe** — where color conveys meaning, pair it with a text label + shape/icon.
 - **Stack** — Bun · React Router 7 · Tailwind + shadcn/ui · SQLite + Drizzle.
+- **HANDOFF.md is the brain.** Read [`HANDOFF.md`](HANDOFF.md) at the start of every phase you own
+  and update it at the end (`## Now`, `## Latest handoff`, one `## Log` line). The pane prompt
+  points here + the plan — it does not re-inject the whole task.
 
 ## Phase 1 — Architect (plan)
 
@@ -27,6 +30,8 @@ executes; Cursor runs the QA gate.
    each a fact a QA specialist can confirm/refute with a command, HTTP status, or visible UI
    outcome. No subjective bullets. UI-with-color criteria include the colorblind-safe check.
    (The Cursor QA gate returns `BLOCKED` without this section.)
+4. **Seed `HANDOFF.md`** — set `## Now` and write the Plan → Execute handoff block (what's decided,
+   open risks, what the Executor must do).
 
 ## Phase 3 — Review
 
@@ -35,9 +40,11 @@ git diff main...feat/subscription-crud --stat   # scope
 git diff main...feat/subscription-crud          # read every change
 ```
 
-Check simplicity · correctness (root-cause, no silent failures) · repo-fit · colorblind-safe ·
-no scope creep. Output a **sign-off** or a numbered **fix list**. Trivial+obvious fixes may be
-made directly; anything else routes back to the Executor. Resolve all before the QA gate.
+Read `HANDOFF.md` first (the Executor's block — built, decisions, open disagreements) so you
+review against what actually happened, then diff. Check simplicity · correctness (root-cause, no
+silent failures) · repo-fit · colorblind-safe · no scope creep. Output a **sign-off** or a
+numbered **fix list**. Trivial+obvious fixes may be made directly; anything else routes back to
+the Executor. Resolve all before the QA gate, then write the Review → QA handoff to `HANDOFF.md`.
 
 ## Phase 5 — PR (gated)
 
@@ -51,6 +58,8 @@ made directly; anything else routes back to the Executor. Resolve all before the
    ```
    On `FAIL` / `BLOCKED`: do **not** open the PR — route blockers back. **Jarod merges** (the
    run-1 "done" line).
+4. **Update `HANDOFF.md`** — summarize the QA verdict + PR/merge state so the brain reflects where
+   the run ended.
 
 ## Friction
 

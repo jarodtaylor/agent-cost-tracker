@@ -10,7 +10,8 @@ Two things: (a) a **post-execution code review** against the plan and Jarod's st
 
 ## Phase 3 — Review
 
-1. Diff the feature branch against `main`; read what the Executor actually changed.
+1. Read **`HANDOFF.md`** (the Executor's block), then diff the feature branch against `main`;
+   review against what the Executor says it did. Write the Review → QA block back to `HANDOFF.md`.
 2. Check against the plan's acceptance criteria and standards:
    - Simplicity — is this the smallest change that works? Any speculative abstraction?
    - Correctness — root cause fixed, not masked. No silent failures / swallowed errors.

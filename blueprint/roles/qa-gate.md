@@ -43,4 +43,6 @@ Parent `composer-2.5` · smoke `composer-2.5-fast` · regression `composer-2.5` 
 
 ## Hands off
 
-`QA_GATE_REPORT` → Claude Code (phase 5), which opens the PR only on `PASS` + `OPEN_PR`.
+`QA_GATE_REPORT` → Claude Code (phase 5), which opens the PR only on `PASS` + `OPEN_PR` and
+summarizes the verdict into **`HANDOFF.md`**. (The gate may consult `HANDOFF.md` for run state,
+but its pass/fail contract is the 5-field QA contract — never HANDOFF prose.)

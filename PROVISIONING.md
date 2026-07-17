@@ -57,6 +57,17 @@ cursor-agent 2026.07.13).
    *Provisioner requirement: a lane's tool dependencies are part of provisioning, resolved at the
    correct scope.*
 
+## Not provisioned from the blueprint (runtime / managed artifacts)
+
+Some native files are **not** copies of an SSOT and the provisioner should leave them alone:
+
+- **`HANDOFF.md`** — the project brain: seeded once, then rewritten by each harness during a run.
+  Runtime state, not provisioned intent. (The *protocol* for reading/writing it lives in the role
+  files, which are provisioned.)
+- **`FRICTION.md`** — append-only run log.
+- **`skills-lock.json`** — managed by the skills tool (`npx skills add`). Committed (reproducible);
+  the materialized skill content under `.agents/`/`.claude/skills/` is gitignored, reinstallable.
+
 ## The duplication problem (the reason U10 exists)
 
 After provisioning, **every role exists twice** — once in `blueprint/`, once in its native

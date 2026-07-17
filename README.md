@@ -26,9 +26,12 @@ The full contract lives in [`blueprint/workflow.md`](blueprint/workflow.md).
 - Native harness config (`CLAUDE.md`, `AGENTS.md`, `.cursor/`, `.codex/`) is **provisioned
   from the blueprint** by hand. That hand-provisioning ceremony is the spec for an automated
   provisioner.
+- **`HANDOFF.md`** — the project "brain": live state each harness reads at the start of its phase
+  and updates at the end, so the loop carries intent instead of re-injecting it every prompt.
 - **`FRICTION.md`** — append-only log of every rough edge in the run. A messy run that
   captures ten "ugh" moments beats a clean run that captures none.
-- **`docs/plans/`** — run plans, each with acceptance criteria.
+- **`docs/plans/`** — run plans, each with acceptance criteria. **`docs/OBSERVATIONS.md`** —
+  deferred design threads + post-run review questions.
 - **`src/`** — the app.
 
 ## Stack

@@ -31,5 +31,7 @@ Rules:
 
 ## Handoff
 
-The plan path is what the Executor pane receives (`codex exec … "Implement docs/plans/<file>"`).
-The acceptance criteria are lifted verbatim into the QA contract at phase 4.
+Seed **`HANDOFF.md`** (the project brain): set `## Now` (phase/branch/next) and write the
+Plan → Execute block (decided · open risks · what the Executor must do). The Executor pane is then
+launched with a thin prompt that points at `HANDOFF.md` + the plan — not a re-injected task. The
+acceptance criteria are lifted verbatim into the QA contract at phase 4.

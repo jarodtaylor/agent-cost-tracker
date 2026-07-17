@@ -11,9 +11,11 @@ git diff main...feat/subscription-crud --stat     # scope
 git diff main...feat/subscription-crud            # read every change
 ```
 
-Check against the plan's acceptance criteria + standards (simplicity, root-cause, repo-fit,
-colorblind-safe, no scope creep, no silent failures). Output a **sign-off** or a numbered
-**fix list**. Trivial + obviously-correct fixes may be made directly; anything else routes back
+Read **`HANDOFF.md`** first (the Executor's block: built · decisions · open disagreements) so you
+review against what actually happened. Check against the plan's acceptance criteria + standards
+(simplicity, root-cause, repo-fit, colorblind-safe, no scope creep, no silent failures). Output a
+**sign-off** or a numbered **fix list**, then write the Review → QA block to `HANDOFF.md`. Trivial
++ obviously-correct fixes may be made directly; anything else routes back
 to the Executor. All fixes resolved before the QA gate.
 
 ## Phase 5 — PR (gated on the QA verdict)

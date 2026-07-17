@@ -40,7 +40,7 @@ coverage/
 test-results/
 playwright-report/
 
-# Auto-installed agent skills (tooling artifacts materialized into cwd, not project source)
+# Agent skills — track the reinstallable manifest, ignore the materialized content.
+# skills-lock.json is committed (source + hash → `npx skills add` reproduces it, package-lock style).
 /.agents/
 /.claude/skills/
-/skills-lock.json

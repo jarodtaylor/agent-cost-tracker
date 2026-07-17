@@ -27,16 +27,21 @@ run-2+ experiment.
 
 ## Handoff contracts (what crosses each boundary)
 
+**The carrier is [`HANDOFF.md`](../HANDOFF.md) — the project brain.** Every phase reads it at
+start and updates it at end (`## Now`, `## Latest handoff`, one `## Log` line). The pane prompt
+points at `HANDOFF.md` + the plan; it does **not** re-inject the whole task. What each boundary
+adds *on top of* the running brain:
+
 1. **Plan → Execute.** The Architect's plan in `docs/plans/`, containing an **Acceptance
    Criteria section written as verifiable pass/fail bullets**. This is mandatory: the QA gate
    returns `BLOCKED` without it, and criteria written *after* code exists degenerate into
-   "assert whatever got built."
-2. **Execute → Review.** Working tree on the feature branch + a short "what I built / what I
-   skipped / where I deviated" note from the Executor.
-3. **Review → QA.** Review sign-off (or fix list resolved) + the **QA contract** (below),
-   assembled by Claude Code from the plan's acceptance criteria.
-4. **QA → PR.** The machine-readable `QA_GATE_REPORT`. Claude opens the PR **iff**
-   `gate_verdict: PASS` **and** `pr_recommendation: OPEN_PR`.
+   "assert whatever got built." Architect seeds `HANDOFF.md` (Plan → Execute block).
+2. **Execute → Review.** Working tree on the feature branch + the Executor's handoff block in
+   `HANDOFF.md` (built · decisions · open disagreements · next).
+3. **Review → QA.** Review sign-off (or fix list resolved) written to `HANDOFF.md` + the **QA
+   contract** (below), assembled by Claude Code from the plan's acceptance criteria.
+4. **QA → PR.** The machine-readable `QA_GATE_REPORT` (verdict also summarized into `HANDOFF.md`).
+   Claude opens the PR **iff** `gate_verdict: PASS` **and** `pr_recommendation: OPEN_PR`.
 
 ## WHAT vs HOW (QA ownership)
 
@@ -65,9 +70,9 @@ codex exec \
   -C /Users/jarod/Code/personal/agent-cost-tracker \
   -m gpt-5.6-sol \
   -s workspace-write \
-  "Implement docs/plans/<run-1-plan>.md on branch feat/subscription-crud.
-   Read AGENTS.md for your role. Follow the plan's Acceptance Criteria exactly.
-   Do not open a PR."
+  "Read HANDOFF.md (the project brain) and the plan it points to. Implement it on branch
+   feat/subscription-crud per your AGENTS.md role and the plan's Acceptance Criteria exactly.
+   Do not open a PR. When done, update HANDOFF.md with your Executor handoff block."
 ```
 
 Useful flags: `--json` (JSONL events), `-o <file>` (write final message), `--output-schema
@@ -145,11 +150,17 @@ the gate is an invisible correctness hole.
 
 ## Browser E2E dependency
 
-`qa-browser-e2e` needs Playwright / browser tooling in the Cursor CLI session. There is **no**
-browser MCP at Cursor user level, so it is registered **project-scoped** in
-[`../.cursor/mcp.json`](../.cursor/mcp.json) — never at user level (that repeats the wrong-scope
-friction). Confirm availability inside the Cursor session before the gate; if unavailable, the
-lane reports `BLOCKED` (not a silent PASS) and the ordering/tooling is a friction entry.
+`qa-browser-e2e` needs Playwright tooling in the Cursor CLI session. Two forms are installed as
+**project skills** (`skills-lock.json`, reinstallable via `npx skills add`):
+
+- **Playwright CLI / codegen** (`playwright-cli` skill) — ~75% fewer tokens; prefer for exercising
+  known acceptance flows and any bulk work.
+- **Playwright MCP** (`@playwright/mcp`, project-scoped in [`../.cursor/mcp.json`](../.cursor/mcp.json)
+  — never user level, that repeats the wrong-scope friction) — for live DOM inspection / debugging.
+
+Match tool to need (economics: MCP ≈114k tok/session, CLI ≈27k, codegen 0 — see `docs/OBSERVATIONS.md`).
+Confirm availability inside the Cursor session before the gate; if unavailable, the lane reports
+`BLOCKED` (not a silent PASS) and the tooling is a friction entry.
 
 ## Dry-run verification (2026-07-16, pre-run-1)
 

@@ -31,8 +31,8 @@ A plan in `docs/plans/` containing:
 
 ## Hands off
 
-The plan file → Executor (phase 2). The acceptance criteria are later lifted verbatim into the
-QA contract (phase 4).
+The plan file → Executor (phase 2), carried via **`HANDOFF.md`** (the project brain the Architect
+seeds). The acceptance criteria are later lifted verbatim into the QA contract (phase 4).
 
 ## Does not
 
