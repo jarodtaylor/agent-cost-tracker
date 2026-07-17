@@ -50,8 +50,8 @@ run-2+ experiment.
 
 ## Pane invocations (Herdr-ready)
 
-Verified against live CLIs on 2026-07-16 (codex 0.144.0, cursor-agent 2026.07.13). The exact
-Codex `-m` model string is confirmed at dry-run (step 5) — the intent is GPT-5.6 Sol.
+Verified against live CLIs on 2026-07-16 (codex 0.144.0, cursor-agent 2026.07.13). Codex model
+pin is `gpt-5.6-sol` (confirmed at dry-run — see below).
 
 ### Phase 2 — Codex executor (headless)
 
@@ -61,7 +61,7 @@ file — that surface does not exist in this Codex version (see `.codex/README.m
 ```bash
 codex exec \
   -C /Users/jarod/Code/personal/agent-cost-tracker \
-  -m <gpt-5.6-sol> \
+  -m gpt-5.6-sol \
   -s workspace-write \
   "Implement docs/plans/<run-1-plan>.md on branch feat/subscription-crud.
    Read AGENTS.md for your role. Follow the plan's Acceptance Criteria exactly.
@@ -148,3 +148,19 @@ browser MCP at Cursor user level, so it is registered **project-scoped** in
 [`../.cursor/mcp.json`](../.cursor/mcp.json) — never at user level (that repeats the wrong-scope
 friction). Confirm availability inside the Cursor session before the gate; if unavailable, the
 lane reports `BLOCKED` (not a silent PASS) and the ordering/tooling is a friction entry.
+
+## Dry-run verification (2026-07-16, pre-run-1)
+
+Each pane smoke-tested standalone (checklist step 5). All green:
+
+- **Codex executor** — `codex exec -m gpt-5.6-sol -s read-only` auto-loaded `AGENTS.md` and
+  correctly recited the Executor role ("I must never open or merge a PR"). Model header showed
+  `gpt-5.6-sol`; pin holds.
+- **Cursor model pins** — `agent models` lists 189 models; all four QA pins resolve **exactly**
+  (`composer-2.5`, `composer-2.5-fast`, `claude-sonnet-5-thinking-high`,
+  `claude-opus-4-8-thinking-high`). No silent fallback.
+- **Cursor discovery** — `agent --workspace . --model composer-2.5 --print` discovered all four
+  project-scoped subagents with correct pins + the `qa-gate` skill.
+- **Still open for run 1:** whether the project-scoped Playwright MCP actually loads *inside* a
+  Cursor gate session (the smoke didn't drive a browser — no app yet). Confirm at the first real
+  gate; `BLOCKED`, not silent PASS, if not.
