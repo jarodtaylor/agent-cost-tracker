@@ -39,3 +39,8 @@ coverage/
 .vitest/
 test-results/
 playwright-report/
+
+# Auto-installed agent skills (tooling artifacts materialized into cwd, not project source)
+/.agents/
+/.claude/skills/
+/skills-lock.json

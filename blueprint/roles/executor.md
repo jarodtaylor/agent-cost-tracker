@@ -1,7 +1,8 @@
 # Role: Executor (shared intent)
 
 **Harness (run 1):** Codex · **Phase:** 2 (Execute) · **Variant:**
-[`variants/codex/executor.md`](variants/codex/executor.md) (provisioned to repo-root `AGENTS.md`)
+[`variants/codex/`](variants/codex/) (provisioned to repo-root `AGENTS.md` **and**
+`.codex/agents/executor.toml`)
 
 ## Owns
 
@@ -31,6 +32,8 @@ Working tree on the feature branch + the handoff note → Reviewer (phase 3).
 
 ## Role surface note
 
-Codex has no per-agent persona file (`.codex/agents` does not exist in this version). This role
-is carried by repo-root `AGENTS.md` plus the invocation-time model pin (`codex exec -m …`). See
-`blueprint/workflow.md` → Pane invocations.
+Codex carries this role on **two** real surfaces: repo-root `AGENTS.md` (project context, read by
+the main `codex exec` session — run 1's driver) and `.codex/agents/executor.toml` (a real
+project-scoped custom subagent, spawnable via delegation). Plus the invocation-time model pin
+(`codex exec -m gpt-5.6-sol`). See `blueprint/workflow.md` → Pane invocations and
+`variants/codex/README.md`.

@@ -55,8 +55,10 @@ pin is `gpt-5.6-sol` (confirmed at dry-run — see below).
 
 ### Phase 2 — Codex executor (headless)
 
-Codex reads the repo-root **`AGENTS.md`** for its role. There is **no** `.codex/agents` persona
-file — that surface does not exist in this Codex version (see `.codex/README.md`).
+Codex has **two** real role surfaces (see `.codex/README.md`): the main `codex exec` session
+reads repo-root **`AGENTS.md`** (project context — the run-1 driver below), and the Executor is
+**also** a project-scoped custom subagent at **`.codex/agents/executor.toml`** (real TOML format,
+spawnable via delegation). Run 1 uses the `AGENTS.md` main-session path:
 
 ```bash
 codex exec \
@@ -153,9 +155,13 @@ lane reports `BLOCKED` (not a silent PASS) and the ordering/tooling is a frictio
 
 Each pane smoke-tested standalone (checklist step 5). All green:
 
-- **Codex executor** — `codex exec -m gpt-5.6-sol -s read-only` auto-loaded `AGENTS.md` and
-  correctly recited the Executor role ("I must never open or merge a PR"). Model header showed
-  `gpt-5.6-sol`; pin holds.
+- **Codex executor — AGENTS.md path.** `codex exec -m gpt-5.6-sol -s read-only` auto-loaded
+  `AGENTS.md` and correctly recited the Executor role ("I must never open or merge a PR"). Model
+  header showed `gpt-5.6-sol`; pin holds.
+- **Codex executor — subagent path.** `codex exec … "delegate to the custom agent named
+  'executor'"` spawned the `.codex/agents/executor.toml` subagent, which returned its own name +
+  rule #1 verbatim. The TOML custom-agent format works end to end. (A passive "list your agents"
+  prompt returns "none configured" — subagents surface via delegation, not self-report.)
 - **Cursor model pins** — `agent models` lists 189 models; all four QA pins resolve **exactly**
   (`composer-2.5`, `composer-2.5-fast`, `claude-sonnet-5-thinking-high`,
   `claude-opus-4-8-thinking-high`). No silent fallback.

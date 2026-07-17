@@ -15,7 +15,7 @@ blueprint/
     qa-gate.md
     variants/              # per-harness HOW
       claude-code/         # architect.md, reviewer.md  → provisioned to CLAUDE.md
-      codex/               # executor.md               → provisioned to AGENTS.md
+      codex/               # AGENTS.md + executor.toml → AGENTS.md + .codex/agents/
       cursor/
         agents/            # 4 QA specialists          → provisioned to .cursor/agents/
         skills/qa-gate/    # QA-lead orchestrator      → provisioned to .cursor/skills/qa-gate/
@@ -31,7 +31,8 @@ the provisioner exists. If you edit a native copy directly, you've drifted from 
 
 The four harnesses expose role differently:
 - **Claude Code** — `CLAUDE.md` project instructions + `.claude/agents/`.
-- **Codex** — repo-root `AGENTS.md` (no per-agent persona file in this version) + `codex exec -m`.
+- **Codex** — repo-root `AGENTS.md` (project context) **and** `.codex/agents/*.toml` (real
+  project-scoped custom subagents) + `codex exec -m`.
 - **Cursor** — `.cursor/agents/*.md` (YAML frontmatter, `model:` pins) + `.cursor/skills/`;
   project scope overrides user scope on name conflict.
 

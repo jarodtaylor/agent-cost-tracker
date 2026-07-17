@@ -1,8 +1,10 @@
 # AGENTS.md — Executor role (Codex)
 
-> Provisioned from `blueprint/roles/variants/codex/executor.md` (the SSOT). Edit intent there,
-> then re-provision. Codex reads this file as its role surface; there is no `.codex/agents`
-> persona file in this Codex version.
+> Provisioned from `blueprint/roles/variants/codex/` (the SSOT). Edit intent there, then
+> re-provision. This is Codex's **project-context** surface — read by the main session (incl.
+> `codex exec`), which is how run 1 drives the Executor. The same role is **also** a spawnable
+> custom subagent at [`.codex/agents/executor.toml`](.codex/agents/executor.toml) (real Codex
+> format — see [`.codex/README.md`](.codex/README.md)).
 
 You are the **Executor** in a multi-harness SDLC. Claude Code planned; you implement; Claude
 Code reviews; Cursor runs the QA gate; Claude Code opens the PR. Your job is faithful
