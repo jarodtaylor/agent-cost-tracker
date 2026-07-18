@@ -35,3 +35,4 @@ Keep it tight — this is a state file, not a narrative.
 - 2026-07-16 claude/architect: scaffold + blueprint provisioned; run-1 plan written with acceptance criteria.
 - 2026-07-17 claude/architect: added HANDOFF brain + Playwright skills; ready for execute.
 - 2026-07-18 claude/architect: live-verified the Herdr loop in a pane — corrected workflow.md orchestration (pane run not agent send; --source visible; split→run pattern; clear trust dialog; idle≠ready). 4 frictions logged. Repo restored to main (Codex had auto-created the branch during the test).
+- 2026-07-18 claude/architect: smoke-tested the Cursor QA pane — Herdr tracks cursor status; playwright MCP picked up (approve via send-keys a, not pane run); Composer 2.5 pin holds; `pane run` TYPES but doesn't SUBMIT to Cursor's composer (needs discrete send-keys Enter). Corrected the QA step in workflow.md; 2 more frictions logged.

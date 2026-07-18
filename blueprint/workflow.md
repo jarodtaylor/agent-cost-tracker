@@ -68,14 +68,18 @@ Herdr primitives Claude uses (the control target is the **pane id**, read from J
 | Launch an agent (interactive) | `herdr pane run <pid> "codex"` (bare executable; Codex defaults to `gpt-5.6-sol`) |
 | Wait for a status transition | `herdr wait agent-status <pid> --status idle\|working\|done --timeout <ms>` |
 | Wait until output appears | `herdr wait output <pid> --match '<text>' --regex --timeout <ms>` |
-| **Submit a prompt / feedback** | `herdr pane run <pid> "<text>"` — text **+ Enter**. `pane send-text` does **not** press Enter and will not submit. |
+| **Submit a prompt / feedback** | **Codex:** `herdr pane run <pid> "<text>"` (text+Enter submits). **Cursor:** `pane run` only *types* — its bundled Enter becomes a newline in the composer; follow with a discrete `herdr pane send-keys <pid> Enter` to submit. |
+| Press a key (dialogs / submit) | `herdr pane send-keys <pid> <key>` — a **bare** keypress (e.g. `a`, `Enter`). Use for selecting dialog options and for submitting to Cursor's composer. |
 | Read a pane | `herdr pane read <pid> --source visible --lines <N>` — use **`visible`** for an agent TUI (`recent` is empty; TUIs use the alternate buffer). |
 
 **Verified gotchas (each bit me live):**
 
-- **`idle` ≠ ready.** A freshly launched agent can report `idle` while sitting on a **dialog** —
-  Codex shows a *directory-trust* prompt on first launch. Always `pane read --source visible` after
-  idle and clear any dialog (`pane run <pid> "1"` to accept) **before** sending the task.
+- **`idle` ≠ ready — and dialog keystrokes are agent-specific.** A freshly launched agent can
+  report `idle` while sitting on a **dialog**. Always `pane read --source visible` after idle and
+  clear it **before** sending the task. Codex's *directory-trust* prompt (numbered) accepts with
+  `pane run <pid> "1"`. Cursor's *MCP-approval* prompt (letter keys — it prompts to approve the
+  project `playwright` MCP on every launch) accepts only with a **bare** `pane send-keys <pid> a`;
+  `pane run "a"` does **not** work (its Enter breaks the selection). Both verified live.
 - **Codex may auto-update on launch** (it upgraded 0.144.0 → 0.144.6 mid-verification and dropped
   to a shell). Re-check `pane get <pid>` shows `agent: codex` before proceeding.
 - **Codex is eager and auto-approved.** Given a trivial prompt it read `AGENTS.md` and ran
@@ -109,16 +113,18 @@ Herdr primitives Claude uses (the control target is the **pane id**, read from J
        re-review the new diff
    write the Review → QA block to HANDOFF.md
    ```
-4. **QA gate — spawn Cursor, clear any dialog, submit the contract, watch for the verdict.**
+4. **QA gate — spawn Cursor, approve MCP, submit the contract, watch for the verdict.**
    ```bash
    CPID=$(herdr pane split --current --direction right --no-focus | jq -r .result.pane.pane_id)
    herdr pane rename "$CPID" qa-gate
-   herdr pane run "$CPID" "agent --model composer-2.5"
+   herdr pane run       "$CPID" "agent --model composer-2.5"
    herdr wait agent-status "$CPID" --status idle --timeout 60000
-   herdr pane read  "$CPID" --source visible --lines 20     # inspect + clear any dialog
-   herdr pane run   "$CPID" "<qa-gate contract prompt — see Pane details>"
-   herdr wait output "$CPID" --match 'gate_verdict' --regex --timeout 1800000
-   herdr pane read   "$CPID" --source visible --lines 200   # capture QA_GATE_REPORT
+   herdr pane read      "$CPID" --source visible --lines 30    # inspect: MCP-approval dialog?
+   herdr pane send-keys "$CPID" a                              # approve playwright MCP (bare key, NOT pane run)
+   herdr pane run       "$CPID" "<qa-gate contract prompt — see Pane details>"
+   herdr pane send-keys "$CPID" Enter                          # Cursor: pane run TYPES; discrete Enter SUBMITS
+   herdr wait output    "$CPID" --match 'gate_verdict' --regex --timeout 1800000
+   herdr pane read      "$CPID" --source visible --lines 200   # capture QA_GATE_REPORT
    ```
 5. **PR.** Parse `gate_verdict` + `pr_recommendation`; on `PASS` + `OPEN_PR`, `gh pr create …` and
    update `HANDOFF.md`. On `FAIL`/`BLOCKED`, re-enter the loop with the blockers — do **not** open
@@ -146,8 +152,10 @@ task text `pane run` submits:
 
 ### Phase 4 — Cursor (QA gate)
 
-After launching `agent --model composer-2.5` and clearing any dialog, the qa-gate contract that
-`pane run` submits:
+Verified live 2026-07-18: launch `agent --model composer-2.5`; it opens on an **MCP-approval
+dialog** for the project `playwright` MCP (proving `.cursor/mcp.json` is picked up) — approve with
+`pane send-keys <pid> a`. Model resolves to **Composer 2.5** (no fallback). Then `pane run` the
+contract **and follow with `pane send-keys <pid> Enter`** to submit it (see the loop). The contract:
 
 ```text
 Run the qa-gate skill as the pre-PR QA team. Do not open a PR.
@@ -167,10 +175,11 @@ Launch /qa-smoke, /qa-regression, and /qa-browser-e2e in parallel (skip e2e only
 and criteria have no UI). Then run /qa-skeptic-verifier on their reports. Emit QA_GATE_REPORT only.
 ```
 
-In interactive mode the QA specialists may hit per-command approval prompts (they start servers /
-run tests). How those get handled — a pre-trusted config vs. Claude accepting via `pane run` (as it
-did for Codex's trust prompt) — is a **run-1 confirmation item**; capture it as friction. Do **not**
-reach for `--print/--force/--trust` headless mode — Herdr wants interactive panes.
+The **launch** MCP-approval dialog is handled (above). Still unverified: whether the QA specialists
+hit **per-command** approval prompts *during* the gate (they start servers / run tests) and how
+those clear in a Herdr pane — that needs a real gate (an app must exist first), so it stays a
+**run-1 confirmation item**; capture it as friction. Do **not** reach for `--print/--force/--trust`
+headless mode — Herdr wants interactive panes.
 
 > Non-Herdr one-shot forms exist (`codex exec …`, `agent --print …`) for CI or standalone smokes —
 > the step-5 dry-run used them — but they are **not** the Herdr loop.
