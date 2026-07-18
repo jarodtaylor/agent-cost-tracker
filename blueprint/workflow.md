@@ -53,37 +53,84 @@ adds *on top of* the running brain:
 
 ---
 
-## Pane invocations (Herdr-ready)
+## Orchestration — the Herdr loop (Claude drives)
 
-Verified against live CLIs on 2026-07-16 (codex 0.144.0, cursor-agent 2026.07.13). Codex model
-pin is `gpt-5.6-sol` (confirmed at dry-run — see below).
+**Claude Code owns the run end to end through Herdr.** It spawns the Executor and QA panes,
+watches them, runs the review ↔ fix cycle, and opens the PR. Herdr commands below are verified
+against `herdr --help` (2026-07-18); **live agent-status detection and the fix-loop mechanism are
+confirmed at run 1** — that is part of what the dogfood tests.
 
-### Phase 2 — Codex executor (headless)
+Herdr primitives Claude uses:
 
-Codex has **two** real role surfaces (see `.codex/README.md`): the main `codex exec` session
-reads repo-root **`AGENTS.md`** (project context — the run-1 driver below), and the Executor is
-**also** a project-scoped custom subagent at **`.codex/agents/executor.toml`** (real TOML format,
-spawnable via delegation). Run 1 uses the `AGENTS.md` main-session path:
+| Need | Command |
+|---|---|
+| Spawn a pane running a command | `herdr agent start <name> --cwd $REPO --split down\|right -- <argv…>` |
+| Watch until the agent is done | `herdr agent wait <name> --status idle --timeout <ms>` (or `herdr wait agent-status <pane> --status done`) |
+| Watch until output appears | `herdr wait output <pane> --match '<text>' --regex --timeout <ms>` |
+| Feed text to a live agent | `herdr agent send <name> '<text>'` |
+| Read a pane's output | `herdr agent read <name> --source recent --lines <N>` |
+
+**Mechanism note:** `codex exec` is **one-shot** (exits when done), so `agent send` can't reach it
+for a second round. For the review ↔ fix loop, run an **interactive** `codex` pane (persistent
+session) and drive it with `agent send`. The one-shot `codex exec` form (below) is the alternative
+when no fix loop is needed.
+
+### The loop
+
+1. **Plan.** Write the plan + seed `HANDOFF.md`. No pane yet.
+2. **Execute — spawn Codex, watch.**
+   ```bash
+   herdr agent start codex --cwd $REPO --split down -- codex -m gpt-5.6-sol
+   herdr agent send codex "Read HANDOFF.md and the plan it points to. Implement on branch feat/subscription-crud per your AGENTS.md role and the plan's Acceptance Criteria. Do not open a PR. Update HANDOFF.md when done."
+   herdr agent wait codex --status idle --timeout 1800000
+   ```
+3. **Review ↔ fix (loop until clean).**
+   ```text
+   read HANDOFF.md (Executor block) + `git diff main...feat/subscription-crud`
+   review vs acceptance criteria + standards
+   while issues:
+       herdr agent send codex "<numbered fix list>"
+       herdr agent wait codex --status idle
+       re-review the new diff
+   write the Review → QA block to HANDOFF.md
+   ```
+4. **QA gate — spawn Cursor (interactive), send the contract, watch for the verdict.**
+   ```bash
+   herdr agent start cursor --cwd $REPO --split right -- agent --model composer-2.5
+   herdr agent send cursor "<qa-gate contract prompt — see Pane details>"
+   herdr wait output cursor --match 'gate_verdict' --regex --timeout 1800000
+   herdr agent read cursor --source recent --lines 200   # capture QA_GATE_REPORT
+   ```
+5. **PR.** Parse `gate_verdict` + `pr_recommendation`; on `PASS` + `OPEN_PR`, `gh pr create …` and
+   update `HANDOFF.md`. On `FAIL`/`BLOCKED`, re-enter the loop with the blockers — do **not** open
+   the PR.
+
+---
+
+## Pane details — interactive launch, the prompt to send, and the contract
+
+Per Herdr's `SKILL.md`: **launch each pane in normal interactive mode — no task in argv, no
+non-interactive flags — then drive it with `herdr agent send`.** (A model pin like `-m` / `--model`
+is fine; it is not a non-interactive flag.) CLIs verified 2026-07-16 (codex 0.144.0, cursor-agent
+2026.07.13); Codex pin `gpt-5.6-sol` confirmed at dry-run.
+
+### Phase 2 — Codex (Executor)
 
 ```bash
-codex exec \
-  -C /Users/jarod/Code/personal/agent-cost-tracker \
-  -m gpt-5.6-sol \
-  -s workspace-write \
-  "Read HANDOFF.md (the project brain) and the plan it points to. Implement it on branch
-   feat/subscription-crud per your AGENTS.md role and the plan's Acceptance Criteria exactly.
-   Do not open a PR. When done, update HANDOFF.md with your Executor handoff block."
+herdr agent start codex --cwd $REPO --split down -- codex -m gpt-5.6-sol
+herdr agent send codex "Read HANDOFF.md and the plan it points to. Implement on branch feat/subscription-crud per your AGENTS.md role and the plan's Acceptance Criteria. Do not open a PR. Update HANDOFF.md when done."
+herdr agent wait codex --status idle
 ```
 
-Useful flags: `--json` (JSONL events), `-o <file>` (write final message), `--output-schema
-<file>` (force a structured final response), `-p <profile>`.
+Codex has **two** real role surfaces (see `.codex/README.md`): the interactive session reads
+repo-root **`AGENTS.md`** (project context — the driver here), and the Executor is **also** a
+project-scoped custom subagent at **`.codex/agents/executor.toml`** (spawnable via delegation).
 
-### Phase 4 — Cursor QA gate (headless)
+### Phase 4 — Cursor (QA gate)
 
 ```bash
-agent --workspace /Users/jarod/Code/personal/agent-cost-tracker \
-  --model composer-2.5 --print --force --trust \
-  "$(cat <<'EOF'
+herdr agent start cursor --cwd $REPO --split right -- agent --model composer-2.5
+herdr agent send cursor "$(cat <<'EOF'
 Run the qa-gate skill as the pre-PR QA team. Do not open a PR.
 
 ## Contract
@@ -96,17 +143,21 @@ Run the qa-gate skill as the pre-PR QA team. Do not open a PR.
 - test: bun test  (or "discover from repo")
 - ui: required
 - auth_seed: none
-- changed_paths: <optional>
 
-Launch /qa-smoke, /qa-regression, and /qa-browser-e2e in parallel (skip e2e only if
-ui is n/a and criteria have no UI). Then run /qa-skeptic-verifier on their reports.
-Emit QA_GATE_REPORT only.
+Launch /qa-smoke, /qa-regression, and /qa-browser-e2e in parallel (skip e2e only if ui is n/a
+and criteria have no UI). Then run /qa-skeptic-verifier on their reports. Emit QA_GATE_REPORT only.
 EOF
 )"
+herdr wait output cursor --match 'gate_verdict' --regex
 ```
 
-`--print` = non-interactive; `--force` (aka `--yolo`) skips per-command allow prompts; `--trust`
-trusts the workspace so headless specialists can start servers / run tests without blocking.
+In interactive mode the QA specialists may hit per-command approval prompts (they start servers /
+run tests). How those get handled in a Herdr-driven pane — pre-trusted config vs. Claude approving
+via `agent send` — is a **run-1 confirmation item**; capture it as friction. Do **not** reach for
+`--print/--force/--trust` headless mode — Herdr wants interactive panes.
+
+> Non-Herdr one-shot forms exist (`codex exec …`, `agent --print --force --trust …`) for CI or
+> standalone smokes — the step-5 dry-run used them — but they are **not** the Herdr loop.
 
 ### Parsing the QA verdict (phase 5 gate)
 
