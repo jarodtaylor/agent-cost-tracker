@@ -20,7 +20,7 @@ cursor-agent 2026.07.13).
 | 7 | `roles/variants/codex/AGENTS.md` | `AGENTS.md` (repo root) | **copy** | Codex **project-context** surface — read by the main `codex exec` session (run-1 driver) |
 | 8 | `roles/variants/codex/executor.toml` | `.codex/agents/executor.toml` | **copy** | Codex **custom subagent** (real project-scoped TOML) — spawnable via delegation |
 | 9 | *(new — not from a variant)* | `.cursor/mcp.json` | **new** | project-scoped Playwright MCP (`@playwright/mcp@latest --headless --isolated`) to satisfy the `qa-browser-e2e` browser dependency |
-| 10 | `roles/variants/claude-code/architect.md` + `reviewer.md` | `CLAUDE.md` (repo root) | **compose** — merge both variants + a project header + standing standards into one file | Claude Code's role surface (3 phases) |
+| 10 | `roles/variants/claude-code/orchestrator.md` + `architect.md` + `reviewer.md` | `CLAUDE.md` (repo root) | **compose** — identity charge (orchestrator) + standing standards + phase mechanics (architect, reviewer) into one role-first file | Claude Code's role surface: identity + 3 phases + orchestration |
 | 11 | *(marker — no source)* | `.codex/README.md` | **new** | documents Codex's **two** real role surfaces (`AGENTS.md` + `.codex/agents/*.toml`) |
 | 12 | *(placeholder)* | `.claude/agents/README.md` | **new** | none provisioned for run 1 (review runs inline) |
 
@@ -31,8 +31,10 @@ cursor-agent 2026.07.13).
 
 - **copy** — byte-identical. The common case (8 of 12: 6 Cursor + Codex `AGENTS.md` +
   `executor.toml`). A dumb file copy suffices; the SSOT already carries its own banner.
-- **compose** — merge N variant files + boilerplate into one native file (row 10: two variants →
-  one `CLAUDE.md`). The provisioner needs a per-harness assembly recipe, not just a path map.
+- **compose** — merge N variant files + boilerplate into one native file (row 10: three variants
+  — orchestrator identity + architect + reviewer — → one role-first `CLAUDE.md`). The provisioner
+  needs a per-harness assembly recipe, not just a path map. Note the asymmetry: Codex's one role
+  maps to one file each; Claude Code's identity + 3 roles compose into one.
 - **new** — native files with **no** blueprint source (rows 9/11/12: an MCP registration, a
   correction/marker README, a placeholder). The provisioner must allow harness-specific
   scaffolding that the SSOT doesn't carry.
