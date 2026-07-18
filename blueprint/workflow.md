@@ -56,50 +56,69 @@ adds *on top of* the running brain:
 ## Orchestration — the Herdr loop (Claude drives)
 
 **Claude Code owns the run end to end through Herdr.** It spawns the Executor and QA panes,
-watches them, runs the review ↔ fix cycle, and opens the PR. Herdr commands below are verified
-against `herdr --help` (2026-07-18); **live agent-status detection and the fix-loop mechanism are
-confirmed at run 1** — that is part of what the dogfood tests.
+watches them, runs the review ↔ fix cycle, and opens the PR. **Verified live in a Herdr pane on
+2026-07-18** (herdr 0.7.4) — the pattern below came from actually driving a Codex pane, which
+corrected several assumptions.
 
-Herdr primitives Claude uses:
+Herdr primitives Claude uses (the control target is the **pane id**, read from JSON — never guess):
 
 | Need | Command |
 |---|---|
-| Spawn a pane running a command | `herdr agent start <name> --cwd $REPO --split down\|right -- <argv…>` |
-| Watch until the agent is done | `herdr agent wait <name> --status idle --timeout <ms>` (or `herdr wait agent-status <pane> --status done`) |
-| Watch until output appears | `herdr wait output <pane> --match '<text>' --regex --timeout <ms>` |
-| Feed text to a live agent | `herdr agent send <name> '<text>'` |
-| Read a pane's output | `herdr agent read <name> --source recent --lines <N>` |
+| Split a sibling pane | `herdr pane split --current --direction down\|right --no-focus` → read `result.pane.pane_id` |
+| Launch an agent (interactive) | `herdr pane run <pid> "codex"` (bare executable; Codex defaults to `gpt-5.6-sol`) |
+| Wait for a status transition | `herdr wait agent-status <pid> --status idle\|working\|done --timeout <ms>` |
+| Wait until output appears | `herdr wait output <pid> --match '<text>' --regex --timeout <ms>` |
+| **Submit a prompt / feedback** | `herdr pane run <pid> "<text>"` — text **+ Enter**. `pane send-text` does **not** press Enter and will not submit. |
+| Read a pane | `herdr pane read <pid> --source visible --lines <N>` — use **`visible`** for an agent TUI (`recent` is empty; TUIs use the alternate buffer). |
 
-**Mechanism note:** `codex exec` is **one-shot** (exits when done), so `agent send` can't reach it
-for a second round. For the review ↔ fix loop, run an **interactive** `codex` pane (persistent
-session) and drive it with `agent send`. The one-shot `codex exec` form (below) is the alternative
-when no fix loop is needed.
+**Verified gotchas (each bit me live):**
+
+- **`idle` ≠ ready.** A freshly launched agent can report `idle` while sitting on a **dialog** —
+  Codex shows a *directory-trust* prompt on first launch. Always `pane read --source visible` after
+  idle and clear any dialog (`pane run <pid> "1"` to accept) **before** sending the task.
+- **Codex may auto-update on launch** (it upgraded 0.144.0 → 0.144.6 mid-verification and dropped
+  to a shell). Re-check `pane get <pid>` shows `agent: codex` before proceeding.
+- **Codex is eager and auto-approved.** Given a trivial prompt it read `AGENTS.md` and ran
+  `git switch -c feat/subscription-crud` itself (an auto-approver allowed the command). Desired
+  during the real run — just expect it, and don't be surprised by branch/command side effects.
+- Completion reports `idle` in the watched/active tab, `done` in a background tab — treat either as
+  complete.
 
 ### The loop
 
 1. **Plan.** Write the plan + seed `HANDOFF.md`. No pane yet.
-2. **Execute — spawn Codex, watch.**
+2. **Execute — spawn Codex, clear its dialog, submit, watch.**
    ```bash
-   herdr agent start codex --cwd $REPO --split down -- codex -m gpt-5.6-sol
-   herdr agent send codex "Read HANDOFF.md and the plan it points to. Implement on branch feat/subscription-crud per your AGENTS.md role and the plan's Acceptance Criteria. Do not open a PR. Update HANDOFF.md when done."
-   herdr agent wait codex --status idle --timeout 1800000
+   PID=$(herdr pane split --current --direction down --no-focus | jq -r .result.pane.pane_id)
+   herdr pane rename "$PID" executor
+   herdr pane run "$PID" "codex"
+   herdr wait agent-status "$PID" --status idle --timeout 60000
+   herdr pane read  "$PID" --source visible --lines 20     # inspect: trust dialog?
+   herdr pane run   "$PID" "1"                              # accept Codex directory-trust (if shown)
+   herdr pane run   "$PID" "Read HANDOFF.md and the plan it points to. Implement on feat/subscription-crud per your AGENTS.md role and the plan's Acceptance Criteria. Do not open a PR. Update HANDOFF.md when done."
+   herdr wait agent-status "$PID" --status working --timeout 30000
+   herdr wait agent-status "$PID" --status idle    --timeout 1800000   # or --status done if backgrounded
    ```
 3. **Review ↔ fix (loop until clean).**
    ```text
    read HANDOFF.md (Executor block) + `git diff main...feat/subscription-crud`
    review vs acceptance criteria + standards
    while issues:
-       herdr agent send codex "<numbered fix list>"
-       herdr agent wait codex --status idle
+       herdr pane run "$PID" "<numbered fix list>"
+       herdr wait agent-status "$PID" --status working ; herdr wait agent-status "$PID" --status idle
        re-review the new diff
    write the Review → QA block to HANDOFF.md
    ```
-4. **QA gate — spawn Cursor (interactive), send the contract, watch for the verdict.**
+4. **QA gate — spawn Cursor, clear any dialog, submit the contract, watch for the verdict.**
    ```bash
-   herdr agent start cursor --cwd $REPO --split right -- agent --model composer-2.5
-   herdr agent send cursor "<qa-gate contract prompt — see Pane details>"
-   herdr wait output cursor --match 'gate_verdict' --regex --timeout 1800000
-   herdr agent read cursor --source recent --lines 200   # capture QA_GATE_REPORT
+   CPID=$(herdr pane split --current --direction right --no-focus | jq -r .result.pane.pane_id)
+   herdr pane rename "$CPID" qa-gate
+   herdr pane run "$CPID" "agent --model composer-2.5"
+   herdr wait agent-status "$CPID" --status idle --timeout 60000
+   herdr pane read  "$CPID" --source visible --lines 20     # inspect + clear any dialog
+   herdr pane run   "$CPID" "<qa-gate contract prompt — see Pane details>"
+   herdr wait output "$CPID" --match 'gate_verdict' --regex --timeout 1800000
+   herdr pane read   "$CPID" --source visible --lines 200   # capture QA_GATE_REPORT
    ```
 5. **PR.** Parse `gate_verdict` + `pr_recommendation`; on `PASS` + `OPEN_PR`, `gh pr create …` and
    update `HANDOFF.md`. On `FAIL`/`BLOCKED`, re-enter the loop with the blockers — do **not** open
@@ -109,28 +128,28 @@ when no fix loop is needed.
 
 ## Pane details — interactive launch, the prompt to send, and the contract
 
-Per Herdr's `SKILL.md`: **launch each pane in normal interactive mode — no task in argv, no
-non-interactive flags — then drive it with `herdr agent send`.** (A model pin like `-m` / `--model`
-is fine; it is not a non-interactive flag.) CLIs verified 2026-07-16 (codex 0.144.0, cursor-agent
-2026.07.13); Codex pin `gpt-5.6-sol` confirmed at dry-run.
+Per Herdr's `SKILL.md` and verified live: **launch each pane's bare interactive executable — no
+task in argv, no non-interactive flags — then drive it with `herdr pane run <pid> "<text>"`** (the
+loop above has the exact spawn → clear-dialog → submit sequence). A model pin is optional (Codex
+defaults to `gpt-5.6-sol`; Cursor takes `--model composer-2.5`). CLIs verified 2026-07-18: codex
+0.144.6, cursor-agent 2026.07.13, herdr 0.7.4.
 
 ### Phase 2 — Codex (Executor)
 
-```bash
-herdr agent start codex --cwd $REPO --split down -- codex -m gpt-5.6-sol
-herdr agent send codex "Read HANDOFF.md and the plan it points to. Implement on branch feat/subscription-crud per your AGENTS.md role and the plan's Acceptance Criteria. Do not open a PR. Update HANDOFF.md when done."
-herdr agent wait codex --status idle
-```
-
 Codex has **two** real role surfaces (see `.codex/README.md`): the interactive session reads
 repo-root **`AGENTS.md`** (project context — the driver here), and the Executor is **also** a
-project-scoped custom subagent at **`.codex/agents/executor.toml`** (spawnable via delegation).
+project-scoped custom subagent at **`.codex/agents/executor.toml`** (spawnable via delegation). The
+task text `pane run` submits:
+
+> Read HANDOFF.md and the plan it points to. Implement on feat/subscription-crud per your AGENTS.md
+> role and the plan's Acceptance Criteria. Do not open a PR. Update HANDOFF.md when done.
 
 ### Phase 4 — Cursor (QA gate)
 
-```bash
-herdr agent start cursor --cwd $REPO --split right -- agent --model composer-2.5
-herdr agent send cursor "$(cat <<'EOF'
+After launching `agent --model composer-2.5` and clearing any dialog, the qa-gate contract that
+`pane run` submits:
+
+```text
 Run the qa-gate skill as the pre-PR QA team. Do not open a PR.
 
 ## Contract
@@ -146,18 +165,15 @@ Run the qa-gate skill as the pre-PR QA team. Do not open a PR.
 
 Launch /qa-smoke, /qa-regression, and /qa-browser-e2e in parallel (skip e2e only if ui is n/a
 and criteria have no UI). Then run /qa-skeptic-verifier on their reports. Emit QA_GATE_REPORT only.
-EOF
-)"
-herdr wait output cursor --match 'gate_verdict' --regex
 ```
 
 In interactive mode the QA specialists may hit per-command approval prompts (they start servers /
-run tests). How those get handled in a Herdr-driven pane — pre-trusted config vs. Claude approving
-via `agent send` — is a **run-1 confirmation item**; capture it as friction. Do **not** reach for
-`--print/--force/--trust` headless mode — Herdr wants interactive panes.
+run tests). How those get handled — a pre-trusted config vs. Claude accepting via `pane run` (as it
+did for Codex's trust prompt) — is a **run-1 confirmation item**; capture it as friction. Do **not**
+reach for `--print/--force/--trust` headless mode — Herdr wants interactive panes.
 
-> Non-Herdr one-shot forms exist (`codex exec …`, `agent --print --force --trust …`) for CI or
-> standalone smokes — the step-5 dry-run used them — but they are **not** the Herdr loop.
+> Non-Herdr one-shot forms exist (`codex exec …`, `agent --print …`) for CI or standalone smokes —
+> the step-5 dry-run used them — but they are **not** the Herdr loop.
 
 ### Parsing the QA verdict (phase 5 gate)
 
