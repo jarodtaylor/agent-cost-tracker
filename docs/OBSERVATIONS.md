@@ -14,6 +14,8 @@ lift comes in later runs.
 
 ## Post-run review checklist (run the session back after each run)
 
+> **Run 1 answers → [`runs/run-1/RETROSPECTIVE.md`](runs/run-1/RETROSPECTIVE.md) §2.**
+
 - **Did Codex spawn its own subagents?** How many, and for what? Was the work parallelizable /
   fanned out, or sequential? Codex can orchestrate its own subagents — we want the *data* on what
   it does autonomously before deciding what to enforce.
@@ -30,7 +32,10 @@ lift comes in later runs.
 Once we have run data: decide whether to (a) let Codex route/spawn subagents autonomously, (b)
 enforce model/effort choices in the Executor instructions, or (c) build **role-specific Codex
 subagents** in `.codex/agents/` (Executor/Orchestrator, Frontend, Backend, …) and/or
-**stack-specific skills**, or a combination. Data first, then decide.
+**stack-specific skills**, or a combination. Data first, then decide. → **Run-1 data now in
+[`runs/run-1/RETROSPECTIVE.md`](runs/run-1/RETROSPECTIVE.md) §2/§6:** Codex spawned **4 subagents
+autonomously** (1 sequential data slice + a 3-way parallel simplify panel), all at **Sol/xhigh** — the
+parallel pass ~3× output cost for 7 cleanups. Strong early evidence for option (b), enforcing tiers.
 
 ### Handoffs & drift — durable per-project handoff docs
 Interim: a `HANDOFF.md` "brain" file each harness reads at start and updates at end (built /
