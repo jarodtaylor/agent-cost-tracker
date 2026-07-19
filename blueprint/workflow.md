@@ -113,18 +113,28 @@ Herdr primitives Claude uses (the control target is the **pane id**, read from J
        re-review the new diff
    write the Review → QA block to HANDOFF.md
    ```
-4. **QA gate — spawn Cursor, approve MCP, submit the contract, watch for the verdict.**
+4. **QA gate — spawn Cursor *in auto-run mode*, submit the contract, watch for the verdict.**
+   Interactive Cursor prompts **per command**, and Herdr's `send-keys` **cannot** deliver Cursor's
+   approval chords — `Tab` ("allowlist") and `Shift+Tab` ("Run Everything") both collapse to a
+   single-approve, so the gate is **undriveable** one command at a time (proven live 2026-07-19).
+   Launch with **`--force`** (= the dialog's "Run Everything"; keeps the interactive TUI — this is
+   NOT `--print` headless, so it honors "Herdr wants interactive panes") and **`--approve-mcps`**
+   (auto-approves the project `playwright` MCP, so no launch dialog). `--force` removes the *prompt*,
+   not the *visibility*: every command still streams to the pane. Do **not** add `--sandbox` (the
+   ACs need the dev server to bind `:3000` and write `data/app.db`).
    ```bash
    CPID=$(herdr pane split --current --direction right --no-focus | jq -r .result.pane.pane_id)
    herdr pane rename "$CPID" qa-gate
-   herdr pane run       "$CPID" "agent --model composer-2.5"
-   herdr wait agent-status "$CPID" --status idle --timeout 60000
-   herdr pane read      "$CPID" --source visible --lines 30    # inspect: MCP-approval dialog?
-   herdr pane send-keys "$CPID" a                              # approve playwright MCP (bare key, NOT pane run)
+   herdr pane run       "$CPID" "agent --model composer-2.5 --force --approve-mcps"
+   herdr wait agent-status "$CPID" --status idle --timeout 60000   # TUI ready (corner shows "Run Everything")
+   herdr pane read      "$CPID" --source visible --lines 20        # confirm composer ready, no MCP dialog
    herdr pane run       "$CPID" "<qa-gate contract prompt — see Pane details>"
-   herdr pane send-keys "$CPID" Enter                          # Cursor: pane run TYPES; discrete Enter SUBMITS
-   herdr wait output    "$CPID" --match 'gate_verdict' --regex --timeout 1800000
-   herdr pane read      "$CPID" --source visible --lines 200   # capture QA_GATE_REPORT
+   herdr pane send-keys "$CPID" Enter                              # Cursor: pane run TYPES; discrete Enter SUBMITS
+   # completion, not content: the parent returns to idle (active tab) / done (backgrounded) when the
+   # gate finishes. Do NOT `wait output --match gate_verdict` — the submitted contract text contains
+   # "gate_verdict", so it false-matches immediately. Poll status for idle|done instead.
+   herdr wait agent-status "$CPID" --status idle --timeout 1800000
+   herdr pane read      "$CPID" --source visible --lines 70        # capture QA_GATE_REPORT (verdict at the tail)
    ```
 5. **PR.** Parse `gate_verdict` + `pr_recommendation`; on `PASS` + `OPEN_PR`, `gh pr create …` and
    update `HANDOFF.md`. On `FAIL`/`BLOCKED`, re-enter the loop with the blockers — do **not** open
@@ -152,10 +162,11 @@ task text `pane run` submits:
 
 ### Phase 4 — Cursor (QA gate)
 
-Verified live 2026-07-18: launch `agent --model composer-2.5`; it opens on an **MCP-approval
-dialog** for the project `playwright` MCP (proving `.cursor/mcp.json` is picked up) — approve with
-`pane send-keys <pid> a`. Model resolves to **Composer 2.5** (no fallback). Then `pane run` the
-contract **and follow with `pane send-keys <pid> Enter`** to submit it (see the loop). The contract:
+Verified live 2026-07-19: launch `agent --model composer-2.5 --force --approve-mcps`. The TUI opens
+straight on the composer (corner shows **"Run Everything"**); model resolves to **Composer 2.5** (no
+fallback), and `--approve-mcps` clears the project `playwright` MCP with no dialog. Then `pane run`
+the contract **and follow with `pane send-keys <pid> Enter`** to submit it (Cursor's `pane run` only
+*types*; the discrete Enter submits — see the loop). The contract:
 
 ```text
 Run the qa-gate skill as the pre-PR QA team. Do not open a PR.
@@ -175,11 +186,13 @@ Launch /qa-smoke, /qa-regression, and /qa-browser-e2e in parallel (skip e2e only
 and criteria have no UI). Then run /qa-skeptic-verifier on their reports. Emit QA_GATE_REPORT only.
 ```
 
-The **launch** MCP-approval dialog is handled (above). Still unverified: whether the QA specialists
-hit **per-command** approval prompts *during* the gate (they start servers / run tests) and how
-those clear in a Herdr pane — that needs a real gate (an app must exist first), so it stays a
-**run-1 confirmation item**; capture it as friction. Do **not** reach for `--print/--force/--trust`
-headless mode — Herdr wants interactive panes.
+**Resolved live 2026-07-19 (this WAS the run-1 confirmation item):** the QA specialists **do** hit
+per-command approval prompts during the gate (git/lsof/bun/playwright), and Herdr's `send-keys`
+**cannot** clear them — `Tab`/`Shift+Tab` both register as a single-approve, so "allowlist" never
+sticks and "Run Everything" never triggers. The **only** way to drive the gate through Herdr is to
+launch with `--force --approve-mcps` (above). This does **not** violate "Herdr wants interactive
+panes": `--force`/`--yolo` keep the interactive TUI and full command visibility — only `--print`
+(headless) and `--trust` (which requires `--print`) are the forms to avoid.
 
 > Non-Herdr one-shot forms exist (`codex exec …`, `agent --print …`) for CI or standalone smokes —
 > the step-5 dry-run used them — but they are **not** the Herdr loop.
