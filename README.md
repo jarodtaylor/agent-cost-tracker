@@ -64,4 +64,6 @@ bun run build
 
 ## Status
 
-Run 1 subscription CRUD is implemented on `feat/subscription-crud` and awaiting review/QA.
+Run 1 subscription CRUD is implemented on `feat/subscription-crud`, has **passed the QA gate**
+(`PASS` + `OPEN_PR`, all 11 acceptance criteria), and is open as
+**PR [#1](https://github.com/jarodtaylor/agent-cost-tracker/pull/1)** awaiting merge.

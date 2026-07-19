@@ -13,6 +13,7 @@ next**. Native harness config (`CLAUDE.md`, `AGENTS.md`, `.cursor/`, `.codex/`) 
 | 3 | Review | Claude Code | [`roles/reviewer.md`](roles/reviewer.md) | Opus 4.8 / Fable 5 |
 | 4 | QA gate | Cursor CLI | [`roles/qa-gate.md`](roles/qa-gate.md) | Composer 2.5 (parent) |
 | 5 | PR | Claude Code | (reviewer variant, PR step) | Opus 4.8 |
+| 6 | PR-feedback | Claude Code (triage) + Codex (fixes) | [`reviewer.md`](roles/reviewer.md) + [`executor.md`](roles/executor.md) | Opus 4.8 / GPT-5.6 |
 
 Ordering (review-before-QA) is a **run-1 choice, reversible per run** — testing the ordering is
 part of the point. Phase 1's harness map is fixed for run 1; swapping a phase's harness is a
@@ -101,7 +102,9 @@ Herdr primitives Claude uses (the control target is the **pane id**, read from J
    herdr pane run   "$PID" "1"                              # accept Codex directory-trust (if shown)
    herdr pane run   "$PID" "Read HANDOFF.md and the plan it points to. Implement on feat/subscription-crud per your AGENTS.md role and the plan's Acceptance Criteria. Do not open a PR. Update HANDOFF.md when done."
    herdr wait agent-status "$PID" --status working --timeout 30000
-   herdr wait agent-status "$PID" --status idle    --timeout 1800000   # or --status done if backgrounded
+   # completion: a backgrounded pane reports `done`, an active-tab one `idle` — poll for EITHER.
+   # (A bare `--status idle` wait rode out the full 45-min timeout when Codex finished backgrounded.)
+   until herdr pane get "$PID" | jq -e '.result.pane.agent_status|test("^(idle|done)$")' >/dev/null; do sleep 20; done
    ```
 3. **Review ↔ fix (loop until clean).**
    ```text
@@ -132,13 +135,29 @@ Herdr primitives Claude uses (the control target is the **pane id**, read from J
    herdr pane send-keys "$CPID" Enter                              # Cursor: pane run TYPES; discrete Enter SUBMITS
    # completion, not content: the parent returns to idle (active tab) / done (backgrounded) when the
    # gate finishes. Do NOT `wait output --match gate_verdict` — the submitted contract text contains
-   # "gate_verdict", so it false-matches immediately. Poll status for idle|done instead.
-   herdr wait agent-status "$CPID" --status idle --timeout 1800000
+   # "gate_verdict", so it false-matches immediately. Poll for EITHER terminal state:
+   until herdr pane get "$CPID" | jq -e '.result.pane.agent_status|test("^(idle|done)$")' >/dev/null; do sleep 20; done
    herdr pane read      "$CPID" --source visible --lines 70        # capture QA_GATE_REPORT (verdict at the tail)
    ```
 5. **PR.** Parse `gate_verdict` + `pr_recommendation`; on `PASS` + `OPEN_PR`, `gh pr create …` and
    update `HANDOFF.md`. On `FAIL`/`BLOCKED`, re-enter the loop with the blockers — do **not** open
    the PR.
+6. **PR-feedback resolution — triage → route → re-review (loop until ready).** The loop does **not**
+   end at "PR opened"; bot/human review comments arrive and Claude owns their disposition.
+   - **Triage every comment → fix / defer / disregard**, judged against the plan's ACs + non-goals,
+     not "is it a plausible improvement." Bots (CodeRabbit/Copilot) are noisy and confidently wrong a
+     real fraction of the time — a bot suggesting a run-2 feature is *defer*.
+   - **Route the fix bucket by nature** (same line as Phase 3): substantive app-code / behavior /
+     design-call → **Codex** (ONE batched fix-list, not comment-by-comment); trivial+unambiguous or
+     orchestration/docs (blueprint, workflow, README) → **Claude directly**.
+   - **Close the loop:** review Codex's fixes → if they touch an AC/behavior, a **scoped re-QA**
+     (bot re-review is NOT a substitute for the Cursor gate) → push once → bots re-review.
+   - **Terminate:** one substantive fix-cycle for real issues; then if bots return only
+     nits/false-positives, triage once more and declare ready. **Do not chase a green bot score.**
+   - **Audit trail (Claude owns the threads):** reply to each with its disposition (fixed→commit /
+     deferred→run-2 / disregarded→one-line why) and resolve it; surface non-obvious defer/disregard
+     calls to Jarod. Deferrals feed the roadmap (`docs/OBSERVATIONS.md`), not `/dev/null`.
+   Then **Jarod merges** — the run's real "done" line.
 
 ---
 
