@@ -71,7 +71,12 @@ Decision captured: triage-always-orchestrator → route-by-nature (substantive�
 orchestrator) → scoped re-QA on behavior changes → terminate (never chase a green bot score) →
 orchestrator owns threads + audit trail → deferrals feed the roadmap. Agent OS open Qs: is the triage
 itself a gated artifact (like the plan's ACs)? who arbitrates contested defer/disregard calls? how are
-deferrals tracked as a durable backlog rather than PR-thread ephemera?
+deferrals tracked as a durable backlog rather than PR-thread ephemera? **Mechanics learned (round 1,
+2026-07-19):** CodeRabbit auto-resolves + confirms its own threads on re-review; Copilot does not
+(manual GraphQL `resolveReviewThread`). Disposition replies + fix commits all post under the **human's**
+GitHub identity — Agent OS needs per-agent identities (bot app / scoped token per harness) for honest
+attribution. First round was high-signal (4 comments, 0 noise, all fixed in one cycle) — but that's one
+data point; the triage layer exists for the noisier PRs to come.
 
 ### Cross-harness contracts must be structured, not prose
 The gate emitted `gate_verdict: PASS`, not the spec's literal `**gate_verdict:**` — a strict automated

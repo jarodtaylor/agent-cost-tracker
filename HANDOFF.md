@@ -13,25 +13,23 @@ Keep it tight — this is a state file, not a narrative.
 
 ## Now
 
-- **phase:** plan ✅ → execute ✅ → review ✅ → QA gate ✅ (**PASS**) → **PR ✅ open** — awaiting **Jarod's merge** (the run-1 "done" line)
-- **branch:** `feat/subscription-crud` @ `8519af4` → **PR #1** https://github.com/jarodtaylor/agent-cost-tracker/pull/1 (base `main`)
+- **phase:** plan ✅ → execute ✅ → review ✅ → QA gate ✅ (**PASS**) → PR ✅ → **PR-feedback ✅ (round 1 resolved)** — awaiting **Jarod's merge** (the run-1 "done" line)
+- **branch:** `feat/subscription-crud` @ `02d8532` → **PR #1** https://github.com/jarodtaylor/agent-cost-tracker/pull/1 (base `main`)
 - **plan:** `docs/plans/2026-07-16-001-run-1-subscription-crud.md`
-- **next:** Jarod reviews + merges PR #1. Everything through QA is green; nothing blocking.
+- **next:** Jarod reviews + merges PR #1. All 4 bot comments triaged → fixed → verified; all threads resolved; nothing blocking.
 
-## Latest handoff  (QA gate → PR)
+## Latest handoff  (PR-feedback → merge)
 
-- **QA verdict: `gate_verdict: PASS` · `pr_recommendation: OPEN_PR`.** Cursor (Composer 2.5) ran the
-  three lanes (smoke / regression / browser-e2e) + skeptic-verifier and reported **all 11 acceptance
-  criteria met**. The browser lane genuinely drove a real browser (left an `ac9-colorblind-list.png`
-  screenshot — moved to scratchpad as evidence). Gate was **non-destructive**: no tracked files
-  changed, **no PR opened by the gate** (verified independently with `gh pr list`), port 3000 free.
-- **Phase-4 finding (see FRICTION, ★):** the gate is **undriveable interactively through Herdr** —
-  `send-keys` can't clear Cursor's per-command approval prompts (Tab/Shift+Tab collapse to a single
-  approve). Fix: launch `agent --model composer-2.5 --force --approve-mcps` (interactive, autonomous,
-  full command visibility). Required Jarod's explicit authorization; `workflow.md` Phase 4 corrected.
-- **Accepted run-1 limitation carried to run 2:** delete-race full-page 404 → `useFetcher()` swap.
-- **What the PR step does:** open the PR with summary + AC checklist + plan link + QA verdict.
-  **Jarod merges.**
+- **PR-feedback round 1 resolved (Phase 6).** 4 bot comments (3 CodeRabbit + 1 Copilot), all legit,
+  all **fixed**: #1 monthly-cost overflow → BigInt string→cents with `MAX_SAFE_INTEGER` cap + boundary
+  tests (Codex, `02d8532`); #4 ErrorBoundary `error.data` fallback (Codex, `02d8532`); #2 executor +
+  QA waits poll `idle|done` (Claude, `f4c5e7a`); #3 stale README status (Claude, `f4c5e7a`). Reviewer
+  re-verified: **`bun test` 12/12 + typecheck + build green**. Pushed; bots re-reviewed and confirmed;
+  **all 4 threads resolved**.
+- **QA verdict (round 0) stands:** `PASS` + `OPEN_PR`, all 11 ACs (Cursor Composer 2.5, 3 lanes +
+  skeptic). Phase-4 finding: the gate needs `--force --approve-mcps` (FRICTION ★ + OBSERVATIONS).
+- **Accepted run-1 limitation → run 2:** delete-race full-page 404 → `useFetcher()` swap.
+- **What's left:** **Jarod merges PR #1** — the run-1 "done" line. Nothing blocking.
 
 ## Log  (append one line per phase; newest at the bottom)
 
@@ -44,3 +42,4 @@ Keep it tight — this is a state file, not a narrative.
 - 2026-07-19 cursor/qa-gate: PASS + OPEN_PR — all 11 AC met (3 lanes + skeptic); needed `--force --approve-mcps` (Herdr send-keys can't drive Cursor's per-command approvals — key Phase-4 finding); no PR opened by gate. Claude opening the PR.
 - 2026-07-19 claude/pr: opened PR #1 (feat/subscription-crud → main) on PASS+OPEN_PR; verified base/head/tip + state OPEN. **Run-1 loop complete through PR — awaiting Jarod's merge.**
 - 2026-07-19 codex/executor: applied both PR #1 review fixes (safe-cent overflow boundary + route error messages); 12 tests and typecheck green, committed locally for the orchestrator.
+- 2026-07-19 claude/pr-feedback: triaged 4 bot comments (all fix) via Phase-6 model — Codex fixed #1/#4 (`02d8532`), Claude fixed #2/#3 (`f4c5e7a`); re-verified 12/12 tests + typecheck + build; pushed; bots confirmed + all 4 threads resolved. **PR #1 ready — awaiting Jarod's merge.**
