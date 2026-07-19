@@ -88,4 +88,29 @@ describe("parseSubscriptionForm", () => {
 
     expect(result).toMatchObject({ success: true, data: { notes: null } });
   });
+
+  test("accepts the maximum safe integer-cent amount", () => {
+    const result = parseSubscriptionForm(
+      formData({ ...validValues, monthlyCost: "90071992547409.91" }),
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { monthlyCost: Number.MAX_SAFE_INTEGER },
+    });
+  });
+
+  test("rejects the first amount above safe integer cents", () => {
+    const result = parseSubscriptionForm(
+      formData({ ...validValues, monthlyCost: "90071992547409.92" }),
+    );
+
+    expect(result).toEqual({
+      success: false,
+      errors: {
+        monthlyCost: "Enter a valid amount with up to two decimal places.",
+      },
+      values: { ...validValues, monthlyCost: "90071992547409.92" },
+    });
+  });
 });

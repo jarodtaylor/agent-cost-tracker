@@ -43,3 +43,4 @@ Keep it tight — this is a state file, not a narrative.
 - 2026-07-18 claude/reviewer: SIGN-OFF — live-verified AC1+AC11, code-confirmed AC2–AC9; 1 accepted non-AC nit (delete race → run 2); handed the QA gate a contract with window.confirm + db-reset + port-3000 notes.
 - 2026-07-19 cursor/qa-gate: PASS + OPEN_PR — all 11 AC met (3 lanes + skeptic); needed `--force --approve-mcps` (Herdr send-keys can't drive Cursor's per-command approvals — key Phase-4 finding); no PR opened by gate. Claude opening the PR.
 - 2026-07-19 claude/pr: opened PR #1 (feat/subscription-crud → main) on PASS+OPEN_PR; verified base/head/tip + state OPEN. **Run-1 loop complete through PR — awaiting Jarod's merge.**
+- 2026-07-19 codex/executor: applied both PR #1 review fixes (safe-cent overflow boundary + route error messages); 12 tests and typecheck green, committed locally for the orchestrator.

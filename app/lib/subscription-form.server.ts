@@ -40,6 +40,18 @@ function isValidIsoDate(value: string) {
   return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
 }
 
+function parseMonthlyCostInCents(value: string) {
+  const match = /^(0|[1-9]\d*)(?:\.(\d{1,2}))?$/.exec(value);
+  if (!match) {
+    return undefined;
+  }
+
+  const fractionalCents = (match[2] ?? "").padEnd(2, "0") || "0";
+  const cents = BigInt(match[1]) * 100n + BigInt(fractionalCents);
+
+  return cents <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(cents) : undefined;
+}
+
 export function parseSubscriptionForm(formData: FormData): SubscriptionFormResult {
   const values: SubscriptionFormValues = {
     name: getString(formData, "name"),
@@ -53,6 +65,7 @@ export function parseSubscriptionForm(formData: FormData): SubscriptionFormResul
   const vendor = values.vendor.trim();
   const monthlyCost = values.monthlyCost.trim();
   const renewalDate = values.renewalDate.trim();
+  let monthlyCostInCents = 0;
 
   if (!name) {
     errors.name = "Name is required.";
@@ -64,8 +77,13 @@ export function parseSubscriptionForm(formData: FormData): SubscriptionFormResul
 
   if (!monthlyCost) {
     errors.monthlyCost = "Monthly cost is required.";
-  } else if (!/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(monthlyCost)) {
-    errors.monthlyCost = "Enter a valid amount with up to two decimal places.";
+  } else {
+    const parsedMonthlyCost = parseMonthlyCostInCents(monthlyCost);
+    if (parsedMonthlyCost === undefined) {
+      errors.monthlyCost = "Enter a valid amount with up to two decimal places.";
+    } else {
+      monthlyCostInCents = parsedMonthlyCost;
+    }
   }
 
   if (!renewalDate) {
@@ -83,7 +101,7 @@ export function parseSubscriptionForm(formData: FormData): SubscriptionFormResul
     data: {
       name,
       vendor,
-      monthlyCost: Math.round(Number(monthlyCost) * 100),
+      monthlyCost: monthlyCostInCents,
       renewalDate,
       notes: values.notes.trim() || null,
     },
