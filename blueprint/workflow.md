@@ -154,6 +154,8 @@ Herdr primitives Claude uses (the control target is the **pane id**, read from J
      (bot re-review is NOT a substitute for the Cursor gate) → push once → bots re-review.
    - **Terminate:** one substantive fix-cycle for real issues; then if bots return only
      nits/false-positives, triage once more and declare ready. **Do not chase a green bot score.**
+     Bots re-review **each pushed commit** and lag the push by minutes — wait for the re-review to
+     *settle* (threads stable) before declaring ready; "first resolve" ≠ done.
    - **Audit trail (Claude owns the threads):** reply to each with its disposition (fixed→commit /
      deferred→run-2 / disregarded→one-line why) and resolve it; surface non-obvious defer/disregard
      calls to Jarod. Deferrals feed the roadmap (`docs/OBSERVATIONS.md`), not `/dev/null`.
