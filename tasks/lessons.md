@@ -42,3 +42,23 @@ its own instructions.
 surfaces against **live instances**, which warns about false **presences** (disabled entries shown
 as active). Same spine, opposite sign: verify against live **and** docs; absence needs doc-level
 proof.
+
+---
+
+## L2 — At CE checkpoints, consult the toolbelt before hand-rolling (prefer ce-code-review for diff review)
+
+**2026-07-18 · FYI from Jarod · severity: low**
+
+**What happened.** In the run-1 Review phase I spawned a generic `feature-dev:code-reviewer`
+subagent to sweep the diff instead of reaching for **`ce-code-review`**, the purpose-built skill
+that fans out specific lenses across the changes. Jarod flagged it (low-stakes on a dogfood, but a
+real habit gap).
+
+**Root cause.** I already carry the `ce-checkpoints` rule (consult `ce-toolbelt` at the review/PR
+moments and before hand-rolling any multi-step workflow) and skipped the consult step — a reflex
+gap, not a knowledge gap.
+
+**Rule for myself.** At Phase 3 (Review) and Phase 5 (PR) — and before spawning any ad-hoc subagent
+for review / triage / optimization / PR-feedback — STOP and consult `ce-toolbelt` first; for a
+structured diff review use `ce-code-review`. Hand-roll only when no `ce-*` skill fits, and say so.
+Cross-project home: memory `consult-ce-toolbelt-at-checkpoints`.
