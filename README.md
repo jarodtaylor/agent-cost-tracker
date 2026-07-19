@@ -32,13 +32,36 @@ The full contract lives in [`blueprint/workflow.md`](blueprint/workflow.md).
   captures ten "ugh" moments beats a clean run that captures none.
 - **`docs/plans/`** — run plans, each with acceptance criteria. **`docs/OBSERVATIONS.md`** —
   deferred design threads + post-run review questions.
-- **`src/`** — the app.
+- **`app/`** — the React Router application, routes, UI components, and data layer.
+- **`drizzle/`** — checked-in SQLite migrations.
 
 ## Stack
 
 Bun · React Router 7 · Tailwind + shadcn/ui · SQLite + Drizzle. Colorblind-safe from day one
 (text labels + shape, never hue alone).
 
+## Run locally
+
+```sh
+bun install
+bun run dev
+```
+
+The app runs at [http://localhost:3000](http://localhost:3000). It creates
+`data/app.db` on first boot and applies checked-in migrations automatically. To add a few
+example subscriptions, run `bun run db:seed`.
+
+Database maintenance commands are available as `bun run db:generate`, `bun run db:push`, and
+`bun run db:migrate`.
+
+## Verify
+
+```sh
+bun test
+bun run typecheck
+bun run build
+```
+
 ## Status
 
-Scaffold + blueprint in place. Run 1 = repo bootstrap + subscription CRUD.
+Run 1 subscription CRUD is implemented on `feat/subscription-crud` and awaiting review/QA.

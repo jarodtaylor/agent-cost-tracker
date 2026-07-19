@@ -39,6 +39,7 @@ coverage/
 .vitest/
 test-results/
 playwright-report/
+.playwright-cli/
 
 # Agent skills — track the reinstallable manifest, ignore the materialized content.
 # skills-lock.json is committed (source + hash → `npx skills add` reproduces it, package-lock style).

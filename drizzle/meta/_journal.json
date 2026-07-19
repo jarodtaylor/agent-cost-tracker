@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1784429497991,
+      "tag": "0000_burly_diamondback",
+      "breakpoints": true
+    }
+  ]
+}
