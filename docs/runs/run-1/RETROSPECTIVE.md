@@ -20,9 +20,10 @@ Run 1's purpose was **mechanical**: does the loop run end-to-end across real har
 output quality*? (Per OBSERVATIONS: we knew output wouldn't be cohesive without memory contracts +
 durable specs + mature planning; those are later runs.)
 
-**Validated (the plumbing):** plan → execute → review → QA gate → PR → **PR-feedback (Phase 6)** →
-merge, driven through Herdr, across 4 distinct harnesses/models, with `HANDOFF.md` carrying intent
-between phases. The review cycle (bot comments → triage → route → fix → re-review → resolve) ran for real.
+**Validated (the plumbing):** plan → execute → review → QA gate → PR → **PR-feedback (Phase 6)**,
+driven through Herdr, across 4 distinct harnesses/models, with `HANDOFF.md` carrying intent between
+phases. **Merge is Jarod's closing human step — pending at time of writing.** The review cycle (bot
+comments → triage → route → fix → re-review → resolve) ran for real.
 
 **Explicitly NOT tested — do not infer these work:**
 - **Output quality / cohesion** — mechanical run only.
@@ -161,4 +162,4 @@ Ranked by how hard run 1 hit the gap:
 - **Delete-race → `useFetcher()` swap** — the one deferred *code* item (a stale second-tab delete 404s
   into a full-page error boundary; off every AC path).
 - **Overflow error-message precision** (bot nit, disregarded) — optional polish if ever wanted.
-- Everything in §6 P2/P3 is design work for Agent OS, not run-2 app scope.
+- Everything in §6 P2 is design work for Agent OS, not run-2 app scope.
